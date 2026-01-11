@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fridge Inventory</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-left">
+                <span class="logo-icon">🧊</span>
+                <h1>Fridge</h1>
+            </div>
+            <nav class="header-nav">
+                <a th:href="@{/add}" class="btn btn-primary">
+                    <span>➕</span> <span>Add</span>
+                </a>
+                <a th:href="@{/history}" class="btn btn-ghost">
+                    <span>📜</span> <span>History</span>
+                </a>
+                <form th:action="@{/logout}" method="post" class="logout-form">
+                    <button type="submit" class="btn btn-ghost btn-icon" title="Logout">
+                        <span>🚪</span>
+                    </button>
+                </form>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Alerts -->
+        <div th:if="${success}" class="alert alert-success">
+            <span>✓</span> <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error">
+            <span>✕</span> <span th:text="${error}"></span>
+        </div>
+
+        <!-- Warning Summary - Only show if there are warnings -->
+        <div class="warning-summary" th:if="${expiredCount > 0 || expiringSoonCount > 0 || lowQuantityCount > 0}">
+            <div class="warning-card expired" th:if="${expiredCount > 0}">
+                <span class="warning-icon">🚨</span>
+                <div class="warning-text">
+                    <strong th:text="${expiredCount}">0</strong>
+                    <span>expired</span>
+                </div>
+            </div>
+            <div class="warning-card expiring" th:if="${expiringSoonCount > 0}">
+                <span class="warning-icon">⏰</span>
+                <div class="warning-text">
+                    <strong th:text="${expiringSoonCount}">0</strong>
+                    <span>expiring soon</span>
+                </div>
+            </div>
+            <div class="warning-card low-quantity" th:if="${lowQuantityCount > 0}">
+                <span class="warning-icon">📉</span>
+                <div class="warning-text">
+                    <strong th:text="${lowQuantityCount}">0</strong>
+                    <span>running low</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters - Only show if there are items -->
+        <div class="filter-bar" th:if="${!#lists.isEmpty(items) || selectedLocation != null || selectedCategory != null}">
+            <form th:action="@{/}" method="get" class="filter-form">
+                <div class="filter-group" th:if="${!#lists.isEmpty(locations)}">
+                    <label for="location">Location</label>
+                    <select name="location" id="location" onchange="this.form.submit()">
+                        <option value="all" th:selected="${selectedLocation == null || selectedLocation == 'all'}">All</option>
+                        <option th:each="loc : ${locations}" 
+                                th:value="${loc}" 
+                                th:text="${loc}"
+                                th:selected="${loc == selectedLocation}">
+                        </option>
+                    </select>
+                </div>
+                <div class="filter-group" th:if="${!#lists.isEmpty(categories)}">
+                    <label for="category">Category</label>
+                    <select name="category" id="category" onchange="this.form.submit()">
+                        <option value="all" th:selected="${selectedCategory == null || selectedCategory == 'all'}">All</option>
+                        <option th:each="cat : ${categories}" 
+                                th:value="${cat}" 
+                                th:text="${cat}"
+                                th:selected="${cat == selectedCategory}">
+                        </option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Items List -->
+        <div class="items-container">
+            <div th:if="${#lists.isEmpty(items)}" class="empty-state">
+                <span class="empty-icon">🛒</span>
+                <h2>Nothing here yet</h2>
+                <p>Add your first item after a grocery run!</p>
+                <a th:href="@{/add}" class="btn btn-primary">➕ Add your first item</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(items)}" class="items-grid">
+                <article th:each="item : ${items}" 
+                         class="item-card"
+                         th:classappend="${item.expired} ? 'expired' : (${item.isExpiringSoon(warningDays)} ? 'expiring-soon' : (${item.isLowQuantity(lowQuantityThreshold)} ? 'low-quantity' : ''))">
+                    
+                    <div class="item-header">
+                        <h3 class="item-name" th:text="${item.name}">Item Name</h3>
+                        <div class="item-badges">
+                            <span class="item-category" th:if="${item.category != null && !item.category.isEmpty()}" th:text="${item.category}">Category</span>
+                            <span class="item-location" th:text="${item.location}">fridge</span>
+                        </div>
+                    </div>
+
+                    <div class="item-details">
+                        <div class="item-quantity" th:classappend="${item.isLowQuantity(lowQuantityThreshold)} ? 'low' : ''">
+                            <span class="quantity-value" th:text="${#numbers.formatDecimal(item.quantity, 1, 'COMMA', 0, 'POINT')}">1</span>
+                            <span class="quantity-unit" th:text="${item.unit}">pcs</span>
+                            <span th:if="${item.isLowQuantity(lowQuantityThreshold)}" class="quantity-badge low">Low</span>
+                        </div>
+
+                        <div class="item-dates">
+                            <div class="date-row" th:if="${item.expirationDate != null}">
+                                <span class="date-label">Expires</span>
+                                <span class="date-value" 
+                                      th:text="${#temporals.format(item.expirationDate, 'MMM d')}"
+                                      th:classappend="${item.expired} ? 'text-danger' : (${item.isExpiringSoon(warningDays)} ? 'text-warning' : '')">
+                                    Jan 5
+                                </span>
+                                <span th:if="${item.expired}" class="expiry-badge expired">Expired</span>
+                                <span th:if="${!item.expired && item.isExpiringSoon(warningDays)}" class="expiry-badge expiring">Soon</span>
+                            </div>
+                            <div class="date-row">
+                                <span class="date-label">Added</span>
+                                <span class="date-value" th:text="${#temporals.format(item.purchaseDate, 'MMM d')}">Jan 1</span>
+                            </div>
+                        </div>
+
+                        <div class="item-notes" th:if="${item.notes != null && !item.notes.isEmpty()}">
+                            <span>📝</span>
+                            <span th:text="${item.notes}">Notes</span>
+                        </div>
+                    </div>
+
+                    <div class="item-actions">
+                        <form th:action="@{/consume/{id}(id=${item.id})}" method="post" class="consume-form">
+                            <input type="number" name="amount" class="consume-input"
+                                   step="any" min="0.01"
+                                   th:value="${item.unit == 'g' || item.unit == 'ml'} ? '100' : (${item.unit == 'kg' || item.unit == 'L'} ? '0.5' : '1')">
+                            <span class="consume-unit" th:text="${item.unit}">pcs</span>
+                            <button type="submit" class="btn btn-sm btn-consume">Use</button>
+                        </form>
+                        <a th:href="@{/edit/{id}(id=${item.id})}" class="btn btn-sm btn-icon btn-edit" title="Edit">✏️</a>
+                        <form th:action="@{/finish/{id}(id=${item.id})}" method="post" class="inline-form">
+                            <button type="submit" class="btn btn-sm btn-icon btn-finish" title="Done">✓</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <p>Keep it fresh 🧊</p>
+    </footer>
+</body>
+</html>

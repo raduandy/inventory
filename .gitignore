@@ -1,0 +1,21 @@
+# Build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database files (will be recreated)
+data/
+
+# Logs
+*.log
+
+# Environment files
+.env

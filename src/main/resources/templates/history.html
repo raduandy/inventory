@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - Fridge</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="header-left">
+                <a th:href="@{/}" class="back-link">←</a>
+                <span class="logo-icon">🧊</span>
+                <h1>History</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Alerts -->
+        <div th:if="${success}" class="alert alert-success">
+            <span>✓</span> <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error">
+            <span>✕</span> <span th:text="${error}"></span>
+        </div>
+
+        <div class="history-intro">
+            <span>📜</span>
+            <p>Items you've finished</p>
+        </div>
+
+        <div class="items-container">
+            <div th:if="${#lists.isEmpty(items)}" class="empty-state">
+                <span class="empty-icon">✨</span>
+                <h2>No history yet</h2>
+                <p>Finished items will show up here</p>
+                <a th:href="@{/}" class="btn btn-primary">← Back to Fridge</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(items)}" class="history-list">
+                <article th:each="item : ${items}" class="item-card history-card">
+                    <div class="item-header">
+                        <h3 class="item-name" th:text="${item.name}">Item Name</h3>
+                        <div class="item-badges">
+                            <span class="item-category" th:if="${item.category != null && !item.category.isEmpty()}" th:text="${item.category}">Category</span>
+                            <span class="item-location" th:text="${item.location}">fridge</span>
+                        </div>
+                    </div>
+
+                    <div class="item-details">
+                        <div class="item-dates">
+                            <div class="date-row">
+                                <span class="date-label">Added</span>
+                                <span class="date-value" th:text="${#temporals.format(item.purchaseDate, 'MMM d, yyyy')}">Jan 1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="item-actions">
+                        <form th:action="@{/restore/{id}(id=${item.id})}" method="post" class="inline-form">
+                            <button type="submit" class="btn btn-sm btn-restore">🔄 Restore</button>
+                        </form>
+                        <form th:action="@{/delete/{id}(id=${item.id})}" method="post" class="inline-form" 
+                              onsubmit="return confirm('Delete permanently?');">
+                            <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <p>Keep it fresh 🧊</p>
+    </footer>
+</body>
+</html>

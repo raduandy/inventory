@@ -51,6 +51,10 @@ public class ItemService {
         return itemRepository.findByFinishedFalseOrderByExpirationDateAsc();
     }
 
+    public List<Item> findAllItems() {
+        return itemRepository.findAll();
+    }
+
     public List<Item> findByLocation(String location) {
         if (location == null || location.isBlank() || "all".equalsIgnoreCase(location)) {
             return findAllActive();

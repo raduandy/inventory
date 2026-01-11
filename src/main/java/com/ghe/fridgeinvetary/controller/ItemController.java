@@ -229,4 +229,25 @@ public class ItemController {
     public String login() {
         return "login";
     }
+
+    // ============ Export/Import API ============
+
+    @GetMapping("/api/export")
+    @ResponseBody
+    public ResponseEntity<List<Item>> exportItems() {
+        List<Item> allItems = itemService.findAllItems();
+        return ResponseEntity.ok(allItems);
+    }
+
+    @PostMapping("/api/import")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> importItems(@RequestBody List<Item> items) {
+        int imported = 0;
+        for (Item item : items) {
+            item.setId(null); // Reset ID so it creates new records
+            itemService.save(item);
+            imported++;
+        }
+        return ResponseEntity.ok(Map.of("imported", imported, "message", "Successfully imported " + imported + " items"));
+    }
 }
